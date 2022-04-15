@@ -69,7 +69,7 @@ int main()
 
 	// 2. use our shader program when we want to render an object
 	// Build and compile our shader program
-	// Vertex shader
+	// Vertex shader.
 	Shader shader = Shader("../PhysicsExploration/vertex.shader", "../PhysicsExploration/fragment.shader");
 	Shader light_shader = Shader("../PhysicsExploration/light_vertex.shader", "../PhysicsExploration/light_fragment.shader");
 	Shader depth_shader = Shader("../PhysicsExploration/shadow_vertex.shader", "../PhysicsExploration/shadow_fragment.shader");
