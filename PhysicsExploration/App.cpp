@@ -1,17 +1,29 @@
 #include "App.h"
 
+App::App()
+{
+	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+	lightPos(1.2f, 1.0f, 2.0f, 1.0f);
+	lightDir(-0.2f, -1.0f, -0.3f, 0.0f);
+	pointLightPositions[] = {
+							glm::vec3(0.7f,  0.2f,  2.0f),
+							glm::vec3(2.3f, -3.3f, -4.0f),
+							glm::vec3(-4.0f,  2.0f, -12.0f),
+							glm::vec3(0.0f,  0.0f, -3.0f) };
+}
+
 void App::renderScene(const Shader& shader)
 {
-	shader.setVector("spotLight.position", glm::vec4(camera.GetPosition(), 1.0f));
-	shader.setVector("spotLight.direction", camera.GetFront());
+	shader.setVector("spotLight.position", glm::vec4(camera->GetPosition(), 1.0f));
+	shader.setVector("spotLight.direction", camera->GetFront());
 
-	shader.setVector("view_position", camera.GetPosition());
+	shader.setVector("view_position", camera->GetPosition());
 
 	glm::mat4 proj_matrix = glm::mat4(1.0f);
-	proj_matrix = glm::perspective(glm::radians(camera.GetZoom()), (float)WIDTH / (float)HEIGHT, 0.1f, 100.f);
+	proj_matrix = glm::perspective(glm::radians(camera->GetZoom()), (float)WIDTH / (float)HEIGHT, 0.1f, 100.f);
 	shader.setMatrix4("proj_matrix", proj_matrix);
 
-	glm::mat4 view_matrix = camera.GetViewMatrix();
+	glm::mat4 view_matrix = camera->GetViewMatrix();
 	shader.setMatrix4("view_matrix", view_matrix);
 
 	// render the loaded model
@@ -38,17 +50,17 @@ void App::processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, 0.01 * deltaTime);
+		camera->ProcessKeyboard(FORWARD, 0.01 * deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, 0.01 * deltaTime);
+		camera->ProcessKeyboard(BACKWARD, 0.01 * deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, 0.01 * deltaTime);
+		camera->ProcessKeyboard(LEFT, 0.01 * deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, 0.01 * deltaTime);
+		camera->ProcessKeyboard(RIGHT, 0.01 * deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		camera.ProcessKeyboard(UP, 0.01 * deltaTime);
+		camera->ProcessKeyboard(UP, 0.01 * deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-		camera.ProcessKeyboard(DOWN, 0.01 * deltaTime);
+		camera->ProcessKeyboard(DOWN, 0.01 * deltaTime);
 }
 
 void App::key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
@@ -126,7 +138,7 @@ void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	camera->ProcessMouseMovement(xoffset, yoffset);
 
 	//bool lbutton_pressed;
 
@@ -151,7 +163,7 @@ void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera.ProcessMouseScroll(yoffset);
+	camera->ProcessMouseScroll(yoffset);
 }
 
 unsigned int App::loadTexture(const char* path)
