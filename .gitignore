@@ -31,7 +31,6 @@
 *.out
 *.app
 
-/External Resources/assimp/
 /Debug/
 /x64/
 /.vs/
