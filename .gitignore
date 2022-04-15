@@ -32,11 +32,8 @@
 *.app
 
 /External Resources/assimp/
-/External Resources/glad/
 /External Resources/glew/
 /External Resources/glfw/
-/External Resources/glm/
-/External Resources/khr/
 /Debug/
 /x64/
 /.vs/
