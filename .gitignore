@@ -32,7 +32,6 @@
 *.app
 
 /External Resources/assimp/
-/External Resources/glew/
 /Debug/
 /x64/
 /.vs/
