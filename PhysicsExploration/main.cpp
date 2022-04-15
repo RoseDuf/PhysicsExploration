@@ -51,7 +51,7 @@ float lastX = WIDTH / 2.0;
 float lastY = HEIGHT / 2.0;
 float fov = 45.0f;
 
-// The MAIN function, from here we start the application and run the game loop
+// The MAIN function, from here we start the application and run the game loop.
 int main()
 {
 	if (init() != 0)
