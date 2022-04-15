@@ -24,8 +24,13 @@ private:
 	unsigned int loadTexture(const char* path);
 
 private:
+	// Window dimensions
+	const GLuint WIDTH = 800;
+	const GLuint HEIGHT = 600;
+	GLFWwindow* window;
+
 	//camera settings
-	Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+	Camera camera;
 
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame
@@ -38,6 +43,17 @@ private:
 	bool hasDirLight = true;
 	bool hasPointLight = false;
 	bool hasSpotLight = false;
+
+	glm::vec4 lightPos;
+	glm::vec4 lightDir;
+	glm::vec3 pointLightPositions;
+
+	bool firstMouse = true;
+	float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+	float pitch = 0.0f;
+	float lastX = WIDTH / 2.0;
+	float lastY = HEIGHT / 2.0;
+	float fov = 45.0f;
 };
 
 #endif

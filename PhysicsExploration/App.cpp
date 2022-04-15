@@ -32,7 +32,7 @@ void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-void App::key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
+void App::processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -51,7 +51,7 @@ void App::key_callback(GLFWwindow* window, int key, int scancode, int action, in
 		camera.ProcessKeyboard(DOWN, 0.01 * deltaTime);
 }
 
-void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+void App::key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
 {
 	//if you press the Esc key, the window will close
 	if (key == GLFW_KEY_ESCAPE)
@@ -112,7 +112,7 @@ void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	}
 }
 
-void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	if (firstMouse)
 	{
@@ -149,7 +149,7 @@ void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	//}
 }
 
-void App::processInput(GLFWwindow* window)
+void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(yoffset);
 }
