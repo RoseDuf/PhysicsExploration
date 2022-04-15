@@ -1,7 +1,7 @@
 #ifndef LIGHTING_H
 #define LIGHTING_H
 
-#include "stdafx.h"
+#include "includes.h"
 #include "Mesh.h"
 
 class Lighting

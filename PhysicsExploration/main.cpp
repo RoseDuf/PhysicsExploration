@@ -1,6 +1,6 @@
 //modified from http://learnopengl.com/
 
-#include "stdafx.h"
+#include "includes.h"
 #include "Model.h"
 #include "Camera.h"
 #include "Lighting.h"
