@@ -3,13 +3,30 @@
 App::App()
 {
 	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-	lightPos(1.2f, 1.0f, 2.0f, 1.0f);
-	lightDir(-0.2f, -1.0f, -0.3f, 0.0f);
-	pointLightPositions[] = {
-							glm::vec3(0.7f,  0.2f,  2.0f),
-							glm::vec3(2.3f, -3.3f, -4.0f),
-							glm::vec3(-4.0f,  2.0f, -12.0f),
-							glm::vec3(0.0f,  0.0f, -3.0f) };
+	lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
+	lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
+	pointLightPositions = {
+						glm::vec3(0.7f,  0.2f,  2.0f),
+						glm::vec3(2.3f, -3.3f, -4.0f),
+						glm::vec3(-4.0f,  2.0f, -12.0f),
+						glm::vec3(0.0f,  0.0f, -3.0f) };
+}
+
+void App::initialize()
+{
+	glfwSetFramebufferSizeCallback(window, CallbackHandler::framebuffer_size_callback_dispatch);
+	glfwSetKeyCallback(window, CallbackHandler::key_callback_dispatch);
+	glfwSetCursorPosCallback(window, CallbackHandler::cursor_pos_callback_dispatch);
+	glfwSetScrollCallback(window, CallbackHandler::scroll_callback_dispatch);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetMouseButtonCallback(window, mouse_button_callback);
+	//glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
+}
+
+App::~App()
+{
+	delete camera;
+	camera = nullptr;
 }
 
 void App::renderScene(const Shader& shader)
@@ -37,12 +54,6 @@ void App::renderScene(const Shader& shader)
 	shader.setBool("hasSpotLight", hasSpotLight);
 }
 
-void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-	// make sure the viewport matches the new window dimensions; note that width and 
-	// height will be significantly larger than specified on retina displays.
-	glViewport(0, 0, width, height);
-}
 
 void App::processInput(GLFWwindow* window)
 {
@@ -62,6 +73,51 @@ void App::processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
 		camera->ProcessKeyboard(DOWN, 0.01 * deltaTime);
 }
+
+unsigned int App::loadTexture(const char* path)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	return textureID;
+}
+
+void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	// make sure the viewport matches the new window dimensions; note that width and 
+	// height will be significantly larger than specified on retina displays.
+	glViewport(0, 0, width, height);
+}
+
 
 void App::key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
 {
@@ -164,41 +220,4 @@ void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera->ProcessMouseScroll(yoffset);
-}
-
-unsigned int App::loadTexture(const char* path)
-{
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-
-	int width, height, nrComponents;
-	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-	if (data)
-	{
-		GLenum format;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-	}
-
-	return textureID;
 }
