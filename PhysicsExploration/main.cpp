@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Lighting.h"
 #include "stb_image.h"
+#include "MenuGUI.h"
 using namespace std;
 
 int init();
@@ -224,6 +225,8 @@ int main()
 
 int init() {
 	std::cout << "Starting GLFW context, OpenGL 4.3" << std::endl;
+	MenuGUI menuGui;
+	menuGui.loadMenu();
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
