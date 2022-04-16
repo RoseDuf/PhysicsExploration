@@ -9,10 +9,10 @@ public:
 	static CallbackHandler* instance;
 	virtual void setApp() { instance = this; }
 
-	virtual void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-	virtual void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod);
-	virtual void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
-	virtual void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+	virtual void framebuffer_size_callback(GLFWwindow* window, int width, int height) {}
+	virtual void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod) {}
+	virtual void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {}
+	virtual void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
 
 	static void framebuffer_size_callback_dispatch(GLFWwindow* window, int width, int height)
 	{
