@@ -424,3 +424,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+#ignoring file paths 
+[Dd]ebug/
+x64/
+*.obj
+
