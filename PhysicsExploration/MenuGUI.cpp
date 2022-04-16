@@ -5,7 +5,7 @@ reference : https://www.codeproject.com/Tips/5296682/A-Tip-to-Get-MFC-Support-fo
 #include<afxwin.h>
 #include "MenuGUI.h"
 
-int MenuGUI::loadMenu()
+int MenuGUI::_loadMenu()
 {
 	::MessageBox(NULL, _T("There would Simulation List here!"), _T("Physics Simulations"), MB_OK);
 	return 0;

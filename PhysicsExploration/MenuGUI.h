@@ -2,7 +2,7 @@
 class MenuGUI
 {
 public:
-	int loadMenu();
+	int _loadMenu();
 
 	MenuGUI() {}
 
