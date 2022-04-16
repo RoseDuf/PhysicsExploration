@@ -9,6 +9,7 @@ int init(App * app);
 int main()
 {
 	App* application = new App();
+	application->initialize();
 
 	if (init(application) != 0)
 		return EXIT_FAILURE;
