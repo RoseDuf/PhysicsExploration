@@ -5,7 +5,7 @@
 #include "Camera.h"
 #include "Lighting.h"
 #include "stb_image.h"
-#include "MenuGUI.h"
+#include <string>
 using namespace std;
 
 int init();
@@ -52,6 +52,11 @@ float lastX = WIDTH / 2.0;
 float lastY = HEIGHT / 2.0;
 float fov = 45.0f;
 
+//Menu related variables
+bool isMenuEnabled = false;
+static const char* items[]{ "Gravity","Collision" };
+static int selectedItem = -1;
+
 // The MAIN function, from here we start the application and run the game loop.
 int main()
 {
@@ -62,7 +67,7 @@ int main()
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	//glfwSetMouseButtonCallback(window, mouse_button_callback);
 	//glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
 
@@ -149,6 +154,13 @@ int main()
 	//GLuint shadow_pvm_loc = glGetUniformLocation(shadow_shader, "pvm");
 
 
+	// imGui Context Instatntiation 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
 	// Game loop
 
 	while (!glfwWindowShouldClose(window))
@@ -156,9 +168,8 @@ int main()
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-
 		processInput(window);
-
+		
 		////glm::mat4 rotator = glm::rotate(glm::mat4(1.0f), 1.57f, glm::vec3(0, 1, 0));
 		//glm::mat4 translator = glm::translate(glm::mat4(1.0f), modl_move);
 		////glm::mat4 scalor = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
@@ -196,6 +207,12 @@ int main()
 		glViewport(0, 0, WIDTH, HEIGHT);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if (isMenuEnabled)
+		{
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+		}
 
 		// shader stuff vvvvvvvvvvv
 		shader.use();
@@ -208,7 +225,26 @@ int main()
 		object.Draw(shader);
 		plane.Draw(shader);
 		// shader stuff ^^^^^^^^^^^^^^^
+		if (isMenuEnabled)
+		{
+			ImGui::Begin("Simulations");
+			ImGui::Combo("Simulations", &selectedItem, items,IM_ARRAYSIZE(items));
+			if (selectedItem > -1)
+			{
+				ImGui::Text("Item selected %s", items[selectedItem]);
+				if (ImGui::Button("Confirm Simulation"))
+				{
+					// decision point which simulation's rendering pipeline to be loaded using 'selectedItem' Variable
+					isMenuEnabled = false;
+				}
+			}
+			
+			// Here is the point decision Point which simulation is selected in next frame based on selectedItem
 
+			ImGui::End();
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		}
 		// Swap the screen buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -218,6 +254,9 @@ int main()
 	glDeleteVertexArrays(1, &lightVAO);
 	glDeleteBuffers(1, &VBO);*/
 
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
 	return 0;
@@ -225,8 +264,6 @@ int main()
 
 int init() {
 	std::cout << "Starting GLFW context, OpenGL 4.3" << std::endl;
-	MenuGUI menuGui;
-	menuGui.loadMenu();
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -318,6 +355,8 @@ void processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(UP, 0.01 * deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
 		camera.ProcessKeyboard(DOWN, 0.01 * deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+		isMenuEnabled = !isMenuEnabled;
 }
 
 // Is called whenever a key is pressed/released via GLFW
@@ -380,6 +419,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		hasSpotLight = !hasSpotLight;
 	}
+
 
 }
 
