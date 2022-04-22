@@ -2,6 +2,8 @@
 
 App::App()
 {
+	setApp();
+
 	_camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 	_lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
 	_lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
@@ -10,14 +12,19 @@ App::App()
 						glm::vec3(2.3f, -3.3f, -4.0f),
 						glm::vec3(-4.0f,  2.0f, -12.0f),
 						glm::vec3(0.0f,  0.0f, -3.0f) };
-	_model = glm::mat4(1.0f); //to apply scalor and rotational transformations
-	_modl_move = glm::vec3(0, 0, 0); //to apply translational transformations
 	_firstMouse = true;
-	_yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+	_yaw = -90.0f;
 	_pitch = 0.0f;
 	_lastX = WIDTH / 2.0;
 	_lastY = HEIGHT / 2.0;
 	_fov = 45.0f;
+
+	_hasDirLight = true;
+	_hasPointLight = false;
+	_hasSpotLight = false;
+
+	_deltaTime = 0;
+	_lastFrame = 0;
 }
 
 App::~App()
@@ -30,12 +37,53 @@ App::~App()
 	delete _object;
 }
 
-void App::initialize()
+int App::initializeWindow()
 {
-	glfwSetFramebufferSizeCallback(_window, CallbackHandler::framebuffer_size_callback_dispatch);
-	glfwSetKeyCallback(_window, CallbackHandler::key_callback_dispatch);
-	glfwSetCursorPosCallback(_window, CallbackHandler::cursor_pos_callback_dispatch);
-	glfwSetScrollCallback(_window, CallbackHandler::scroll_callback_dispatch);
+	std::cout << "Starting GLFW context, OpenGL 4.3" << std::endl;
+	MenuGUI menuGui;
+	menuGui.loadMenu();
+	glfwInit();
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+	//WINDOW
+	_window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL_Project", nullptr, nullptr);
+
+	if (nullptr == _window)
+	{
+		std::cout << "Failed to create GLFW Window" << std::endl;
+		glfwTerminate();
+		return EXIT_FAILURE;
+	}
+
+	glfwMakeContextCurrent(_window);
+
+	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
+	glewExperimental = GL_TRUE;
+
+	// Initialize GLEW to setup the OpenGL Function pointers
+	if (GLEW_OK != glewInit())
+	{
+		std::cout << "Failed to initialize GLEW" << std::endl;
+		return EXIT_FAILURE;
+	}
+	return 0;
+}
+
+void App::initializeCallbacks()
+{
+	glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback_dispatch);
+	glfwSetKeyCallback(_window, key_callback_dispatch);
+	glfwSetCursorPosCallback(_window, cursor_pos_callback_dispatch);
+	glfwSetScrollCallback(_window, scroll_callback_dispatch);
 	glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	//glfwSetMouseButtonCallback(window, mouse_button_callback);
 	//glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
@@ -170,8 +218,20 @@ void App::secondPass()
 	// shader stuff ^^^^^^^^^^^^^^^
 }
 
-void App::runApp()
+void App::procressFrame()
 {
+	float currentFrame = glfwGetTime();
+	_deltaTime = currentFrame - _lastFrame;
+	_lastFrame = currentFrame;
+}
+
+int App::runApp()
+{
+	if (initializeWindow() != 0)
+		return EXIT_FAILURE;
+
+	initializeCallbacks();
+
 	initializeShaders();
 	initializeModels();
 	configureDepthBuffer();
@@ -179,11 +239,8 @@ void App::runApp()
 
 	while (!glfwWindowShouldClose(_window))
 	{
-		float currentFrame = glfwGetTime();
-		_deltaTime = currentFrame - _lastFrame;
-		_lastFrame = currentFrame;
-
-		processInput(_window);
+		procressFrame();
+		processInput();
 
 		firstPass();
 		secondPass();
@@ -222,22 +279,22 @@ void App::renderScene(const Shader& shader)
 	shader.setBool("hasSpotLight", _hasSpotLight);
 }
 
-void App::processInput(GLFWwindow* window)
+void App::processInput()
 {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(_window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS)
 		_camera->ProcessKeyboard(FORWARD, 0.01 * _deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS)
 		_camera->ProcessKeyboard(BACKWARD, 0.01 * _deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS)
 		_camera->ProcessKeyboard(LEFT, 0.01 * _deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS)
 		_camera->ProcessKeyboard(RIGHT, 0.01 * _deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_R) == GLFW_PRESS)
 		_camera->ProcessKeyboard(UP, 0.01 * _deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_F) == GLFW_PRESS)
 		_camera->ProcessKeyboard(DOWN, 0.01 * _deltaTime);
 }
 
@@ -291,42 +348,6 @@ void App::key_callback(GLFWwindow* window, int key, int scancode, int action, in
 	//if you press the Esc key, the window will close
 	if (key == GLFW_KEY_ESCAPE)
 		glfwSetWindowShouldClose(window, GL_TRUE);
-
-	//IJKL buttons to move the model
-	if (key == GLFW_KEY_I) //I moves the object along the +Y axis
-		_modl_move.z += 1;
-
-	if (key == GLFW_KEY_K) //K moves the object along the -Y
-		_modl_move.z -= 1;
-
-	if (key == GLFW_KEY_J) //J moves the object along the +X axis
-		_modl_move.y += 1;
-
-	if (key == GLFW_KEY_L) //L moves the object along the -X axis
-		_modl_move.y -= 1;
-
-	if (key == GLFW_KEY_PAGE_UP) //PgUp moves the object along the +Z axis
-		_modl_move.x += 1;
-
-	if (key == GLFW_KEY_PAGE_DOWN) //PgDown moves the object along the -Z axis
-		_modl_move.x -= 1;
-
-	//BNE buttons to rotate the model
-	if (key == GLFW_KEY_B) //B rotates the object about the X axis
-		_model = glm::rotate(_model, glm::radians(5.f), glm::vec3(0, 1, 0));
-
-	if (key == GLFW_KEY_N) //N rotates the object about the Y axis,
-		_model = glm::rotate(_model, glm::radians(5.f), glm::vec3(1, 0, 0));
-
-	if (key == GLFW_KEY_E) //rotates the object about the Z axis
-		_model = glm::rotate(_model, glm::radians(5.f), glm::vec3(0, 0, 1));
-
-	//OP buttons to scale up and down
-	if (key == GLFW_KEY_O) //O scales up the object by a factor of 10%
-		_model = glm::scale(_model, glm::vec3(1.1f));
-
-	if (key == GLFW_KEY_P) //P scales up the object by a factor of -10%
-		_model = glm::scale(_model, glm::vec3(0.9f));
 
 	//toggle the directional light on/off
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
