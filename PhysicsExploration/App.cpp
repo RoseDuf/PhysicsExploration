@@ -2,45 +2,213 @@
 
 App::App()
 {
-	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-	lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
-	lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
-	pointLightPositions = {
+	_camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+	_lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
+	_lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
+	_pointLightPositions = {
 						glm::vec3(0.7f,  0.2f,  2.0f),
 						glm::vec3(2.3f, -3.3f, -4.0f),
 						glm::vec3(-4.0f,  2.0f, -12.0f),
 						glm::vec3(0.0f,  0.0f, -3.0f) };
-}
-
-void App::initialize()
-{
-	glfwSetFramebufferSizeCallback(window, CallbackHandler::framebuffer_size_callback_dispatch);
-	glfwSetKeyCallback(window, CallbackHandler::key_callback_dispatch);
-	glfwSetCursorPosCallback(window, CallbackHandler::cursor_pos_callback_dispatch);
-	glfwSetScrollCallback(window, CallbackHandler::scroll_callback_dispatch);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	//glfwSetMouseButtonCallback(window, mouse_button_callback);
-	//glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
+	_model = glm::mat4(1.0f); //to apply scalor and rotational transformations
+	_modl_move = glm::vec3(0, 0, 0); //to apply translational transformations
+	_firstMouse = true;
+	_yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+	_pitch = 0.0f;
+	_lastX = WIDTH / 2.0;
+	_lastY = HEIGHT / 2.0;
+	_fov = 45.0f;
 }
 
 App::~App()
 {
-	delete camera;
-	camera = nullptr;
+	delete _camera;
+	delete _shader;
+	delete _lightShader;
+	delete _depthShader;
+	delete _plane;
+	delete _object;
+}
+
+void App::initialize()
+{
+	glfwSetFramebufferSizeCallback(_window, CallbackHandler::framebuffer_size_callback_dispatch);
+	glfwSetKeyCallback(_window, CallbackHandler::key_callback_dispatch);
+	glfwSetCursorPosCallback(_window, CallbackHandler::cursor_pos_callback_dispatch);
+	glfwSetScrollCallback(_window, CallbackHandler::scroll_callback_dispatch);
+	glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetMouseButtonCallback(window, mouse_button_callback);
+	//glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
+
+	stbi_set_flip_vertically_on_load(true);
+}
+
+void App::initializeShaders()
+{
+	// 2. use our shader program when we want to render an object
+	// Build and compile our shader program
+	// Vertex shader.
+	_shader = new Shader("../PhysicsExploration/vertex.shader", "../PhysicsExploration/fragment.shader");
+	_lightShader = new Shader("../PhysicsExploration/light_vertex.shader", "../PhysicsExploration/light_fragment.shader");
+	_depthShader = new Shader("../PhysicsExploration/shadow_vertex.shader", "../PhysicsExploration/shadow_fragment.shader");
+}
+
+void App::initializeModels()
+{
+	//Model object("../External Resources/Models/cat.obj");
+	_plane = new Model("../External Resources/Models/plane.obj");
+	_object = new Model("../External Resources/Models/backpack.obj");
+}
+
+void App::configureDepthBuffer()
+{
+	glEnable(GL_DEPTH_TEST);
+
+	//DEPTH MAP - Configure the framebuffer
+	//We create a 2D texture that we'll use as the framebuffer's depth buffer
+	glGenTextures(1, &_depthMap);
+	glBindTexture(GL_TEXTURE_2D, _depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	//With the generated depth texture we can attach it as the framebuffer's depth buffer
+	glGenFramebuffers(1, &_depthMapFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, _depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthMap, 0);
+	//We only need the depth information when rendering the scene from the light's perspective so there is no need for a color buffer. 
+	//A framebuffer object however is not complete without a color buffer so we need to explicitly tell OpenGL we're not going to render any color data. 
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void App::addLights()
+{
+	_shader->use();
+
+	_shader->setInt("shadowMap", 0);
+
+	_shader->setVector("dirLight.position", _lightPos);
+	_shader->setVector("dirLight.direction", _lightDir);
+	_shader->setVector("dirLight.ambient", glm::vec3(0.05f, 0.05f, 0.05f));
+	_shader->setVector("dirLight.diffuse", glm::vec3(0.4f, 0.4f, 0.4f));
+	_shader->setVector("dirLight.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+
+	for (GLuint i = 0; i < (sizeof(_pointLightPositions) / sizeof(_pointLightPositions[0])) - 1; i++)
+	{
+		string number = to_string(i);
+
+		_shader->setVector("pointLights[" + number + "].position", _pointLightPositions[i]);
+		_shader->setVector("pointLights[" + number + "].ambient", glm::vec3(0.05f, 0.05f, 0.05f));
+		_shader->setVector("pointLights[" + number + "].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+		_shader->setVector("pointLights[" + number + "].specular", glm::vec3(1.0f, 1.0f, 1.0f));
+		_shader->setFloat("pointLights[" + number + "].constant", 1.0f);
+		_shader->setFloat("pointLights[" + number + "].linearK", 0.09f);
+		_shader->setFloat("pointLights[" + number + "].quadratic", 0.032f);
+	}
+
+	_shader->setVector("spotLight.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+	_shader->setVector("spotLight.diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
+	_shader->setVector("spotLight.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+	_shader->setFloat("spotLight.constant", 1.0f);
+	_shader->setFloat("spotLight.linearK", 0.09f);
+	_shader->setFloat("spotLight.quadratic", 0.032f);
+	_shader->setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	_shader->setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
+}
+
+void App::firstPass()
+{
+	//First pass : render depth of scene to texture (from light's perspective)
+	// --------------------------------------------------------------
+	//Use an orthographic projection matrix for the light source where there is no perspective deform
+	float near_plane = 1.0f, far_plane = 7.5f;
+	glm::mat4 shadow_proj_matrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	//To transform each object so they're visible from the light's point of view we use lookAt for the view matrix
+	glm::mat4 shadow_view_matrix = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	//Combining these two gives us a light space transformation matrix that transforms each world-space vector into the space as visible from the light source
+	_lightSpaceMatrix = shadow_proj_matrix * shadow_view_matrix;
+
+	_depthShader->use();
+	_depthShader->setMatrix4("lightSpace_matrix", _lightSpaceMatrix);
+
+	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT); //If we forget to update the viewport parameters, the resulting depth map will be either incomplete or too small
+	glBindFramebuffer(GL_FRAMEBUFFER, _depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+
+	// shader stuff vvvvvvvvvvv
+	renderScene(*_depthShader);
+	_object->Draw(*_depthShader);
+	_plane->Draw(*_depthShader);
+	// shader stuff ^^^^^^^^^^^^^^^
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void App::secondPass()
+{
+	//Second pass : render scene as normal with shadow mapping (using depth map)
+	// --------------------------------------------------------------
+	glViewport(0, 0, WIDTH, HEIGHT);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// shader stuff vvvvvvvvvvv
+	_shader->use();
+
+	_shader->setMatrix4("lightSpace_matrix", _lightSpaceMatrix);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, _depthMap);
+
+	renderScene(*_shader);
+	_object->Draw(*_shader);
+	_plane->Draw(*_shader);
+	// shader stuff ^^^^^^^^^^^^^^^
+}
+
+void App::runApp()
+{
+	initializeShaders();
+	initializeModels();
+	configureDepthBuffer();
+	addLights();
+
+	while (!glfwWindowShouldClose(_window))
+	{
+		float currentFrame = glfwGetTime();
+		_deltaTime = currentFrame - _lastFrame;
+		_lastFrame = currentFrame;
+
+		processInput(_window);
+
+		firstPass();
+		secondPass();
+
+		// Swap the screen buffers
+		glfwSwapBuffers(_window);
+		glfwPollEvents();
+	}
+
+	// Terminate GLFW, clearing any resources allocated by GLFW.
+	glfwTerminate();
 }
 
 void App::renderScene(const Shader& shader)
 {
-	shader.setVector("spotLight.position", glm::vec4(camera->GetPosition(), 1.0f));
-	shader.setVector("spotLight.direction", camera->GetFront());
+	shader.setVector("spotLight.position", glm::vec4(_camera->GetPosition(), 1.0f));
+	shader.setVector("spotLight.direction", _camera->GetFront());
 
-	shader.setVector("view_position", camera->GetPosition());
+	shader.setVector("view_position", _camera->GetPosition());
 
 	glm::mat4 proj_matrix = glm::mat4(1.0f);
-	proj_matrix = glm::perspective(glm::radians(camera->GetZoom()), (float)WIDTH / (float)HEIGHT, 0.1f, 100.f);
+	proj_matrix = glm::perspective(glm::radians(_camera->GetZoom()), (float)WIDTH / (float)HEIGHT, 0.1f, 100.f);
 	shader.setMatrix4("proj_matrix", proj_matrix);
 
-	glm::mat4 view_matrix = camera->GetViewMatrix();
+	glm::mat4 view_matrix = _camera->GetViewMatrix();
 	shader.setMatrix4("view_matrix", view_matrix);
 
 	// render the loaded model
@@ -49,11 +217,10 @@ void App::renderScene(const Shader& shader)
 	model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
 	shader.setMatrix4("model_matrix", model_matrix);
 
-	shader.setBool("hasDirLight", hasDirLight);
-	shader.setBool("hasPointLight", hasPointLight);
-	shader.setBool("hasSpotLight", hasSpotLight);
+	shader.setBool("hasDirLight", _hasDirLight);
+	shader.setBool("hasPointLight", _hasPointLight);
+	shader.setBool("hasSpotLight", _hasSpotLight);
 }
-
 
 void App::processInput(GLFWwindow* window)
 {
@@ -61,17 +228,17 @@ void App::processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera->ProcessKeyboard(FORWARD, 0.01 * deltaTime);
+		_camera->ProcessKeyboard(FORWARD, 0.01 * _deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera->ProcessKeyboard(BACKWARD, 0.01 * deltaTime);
+		_camera->ProcessKeyboard(BACKWARD, 0.01 * _deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera->ProcessKeyboard(LEFT, 0.01 * deltaTime);
+		_camera->ProcessKeyboard(LEFT, 0.01 * _deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera->ProcessKeyboard(RIGHT, 0.01 * deltaTime);
+		_camera->ProcessKeyboard(RIGHT, 0.01 * _deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		camera->ProcessKeyboard(UP, 0.01 * deltaTime);
+		_camera->ProcessKeyboard(UP, 0.01 * _deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-		camera->ProcessKeyboard(DOWN, 0.01 * deltaTime);
+		_camera->ProcessKeyboard(DOWN, 0.01 * _deltaTime);
 }
 
 unsigned int App::loadTexture(const char* path)
@@ -127,97 +294,77 @@ void App::key_callback(GLFWwindow* window, int key, int scancode, int action, in
 
 	//IJKL buttons to move the model
 	if (key == GLFW_KEY_I) //I moves the object along the +Y axis
-		modl_move.z += 1;
+		_modl_move.z += 1;
 
 	if (key == GLFW_KEY_K) //K moves the object along the -Y
-		modl_move.z -= 1;
+		_modl_move.z -= 1;
 
 	if (key == GLFW_KEY_J) //J moves the object along the +X axis
-		modl_move.y += 1;
+		_modl_move.y += 1;
 
 	if (key == GLFW_KEY_L) //L moves the object along the -X axis
-		modl_move.y -= 1;
+		_modl_move.y -= 1;
 
 	if (key == GLFW_KEY_PAGE_UP) //PgUp moves the object along the +Z axis
-		modl_move.x += 1;
+		_modl_move.x += 1;
 
 	if (key == GLFW_KEY_PAGE_DOWN) //PgDown moves the object along the -Z axis
-		modl_move.x -= 1;
+		_modl_move.x -= 1;
 
 	//BNE buttons to rotate the model
 	if (key == GLFW_KEY_B) //B rotates the object about the X axis
-		model = glm::rotate(model, glm::radians(5.f), glm::vec3(0, 1, 0));
+		_model = glm::rotate(_model, glm::radians(5.f), glm::vec3(0, 1, 0));
 
 	if (key == GLFW_KEY_N) //N rotates the object about the Y axis,
-		model = glm::rotate(model, glm::radians(5.f), glm::vec3(1, 0, 0));
+		_model = glm::rotate(_model, glm::radians(5.f), glm::vec3(1, 0, 0));
 
 	if (key == GLFW_KEY_E) //rotates the object about the Z axis
-		model = glm::rotate(model, glm::radians(5.f), glm::vec3(0, 0, 1));
+		_model = glm::rotate(_model, glm::radians(5.f), glm::vec3(0, 0, 1));
 
 	//OP buttons to scale up and down
 	if (key == GLFW_KEY_O) //O scales up the object by a factor of 10%
-		model = glm::scale(model, glm::vec3(1.1f));
+		_model = glm::scale(_model, glm::vec3(1.1f));
 
 	if (key == GLFW_KEY_P) //P scales up the object by a factor of -10%
-		model = glm::scale(model, glm::vec3(0.9f));
+		_model = glm::scale(_model, glm::vec3(0.9f));
 
 	//toggle the directional light on/off
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
-		hasDirLight = !hasDirLight;
+		_hasDirLight = !_hasDirLight;
 	}
 
 	//toggle the point light(s) on/off
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
 	{
-		hasPointLight = !hasPointLight;
+		_hasPointLight = !_hasPointLight;
 	}
 
 	//toggle the spot light on/off
 	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
 	{
-		hasSpotLight = !hasSpotLight;
+		_hasSpotLight = !_hasSpotLight;
 	}
 }
 
 void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	if (firstMouse)
+	if (_firstMouse)
 	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
+		_lastX = xpos;
+		_lastY = ypos;
+		_firstMouse = false;
 	}
 
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-	lastX = xpos;
-	lastY = ypos;
+	float xoffset = xpos - _lastX;
+	float yoffset = _lastY - ypos;
+	_lastX = xpos;
+	_lastY = ypos;
 
-	camera->ProcessMouseMovement(xoffset, yoffset);
-
-	//bool lbutton_pressed;
-
-	//if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-	//	lbutton_pressed = true;
-	//else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
-	//	lbutton_pressed = false;
-
-	////moving forward / backward while left button is pressed
-	//if (lbutton_pressed) {
-	//	if (lastY - ypos > 0) { //mouse going up, camera moves backward
-	//		cam_pos -= cam_dir;
-	//		lastY = ypos;
-	//	}
-
-	//	if (lastY - ypos < 0) { //mouse going down, camera moves forward
-	//		cam_pos += cam_dir;
-	//		lastY = ypos;
-	//	}
-	//}
+	_camera->ProcessMouseMovement(xoffset, yoffset);
 }
 
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera->ProcessMouseScroll(yoffset);
+	_camera->ProcessMouseScroll(yoffset);
 }
