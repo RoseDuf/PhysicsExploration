@@ -175,6 +175,8 @@ int main()
 
 int init(App * application) {
 	std::cout << "Starting GLFW context, OpenGL 4.3" << std::endl;
+	MenuGUI menuGui;
+	menuGui.loadMenu();
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
