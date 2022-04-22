@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "stdafx.h"
+#include "includes.h"
 
 // Default camera values
 const float YAW = -90.0f;
