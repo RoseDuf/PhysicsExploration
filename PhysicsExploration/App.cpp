@@ -250,7 +250,7 @@ int App::runApp()
 		glfwSwapBuffers(_window);
 		glfwPollEvents();
 	}
-
+	imGUIEndContext();
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
 }
@@ -412,7 +412,7 @@ void App::renderingGUIMenuIfEnabled()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGui::Begin("Simulations");
-		const char* items[2]{ "Gravity", "ModelLoading" };
+		const char* items[2]{ "Gravity", "Collision" };
 		ImGui::Combo("Simulations", &_selectedItem, items, IM_ARRAYSIZE(items));
 		if (_selectedItem > -1)
 		{
@@ -432,3 +432,9 @@ void App::renderingGUIMenuIfEnabled()
 	}
 }
 
+void App::imGUIEndContext()
+{
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+}
