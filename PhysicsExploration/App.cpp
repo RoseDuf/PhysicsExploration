@@ -3,7 +3,8 @@
 App::App()
 {
 	setApp();
-
+	_isMenuEnabled = false;
+	_selectedItem = -1;
 	_camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 	_lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
 	_lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
@@ -25,6 +26,7 @@ App::App()
 
 	_deltaTime = 0;
 	_lastFrame = 0;
+	_simulationItemCount = 0;
 }
 
 App::~App()
@@ -40,8 +42,6 @@ App::~App()
 int App::initializeWindow()
 {
 	std::cout << "Starting GLFW context, OpenGL 4.3" << std::endl;
-	MenuGUI menuGui;
-	menuGui.loadMenu();
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -84,7 +84,7 @@ void App::initializeCallbacks()
 	glfwSetKeyCallback(_window, key_callback_dispatch);
 	glfwSetCursorPosCallback(_window, cursor_pos_callback_dispatch);
 	glfwSetScrollCallback(_window, scroll_callback_dispatch);
-	glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	//glfwSetMouseButtonCallback(window, mouse_button_callback);
 	//glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
 
@@ -236,20 +236,21 @@ int App::runApp()
 	initializeModels();
 	configureDepthBuffer();
 	addLights();
-
+	imGUIContextIntialization();
 	while (!glfwWindowShouldClose(_window))
 	{
 		procressFrame();
 		processInput();
 
 		firstPass();
+		
 		secondPass();
-
+		renderGUIMenuIfEnabled();
 		// Swap the screen buffers
 		glfwSwapBuffers(_window);
 		glfwPollEvents();
 	}
-
+	imGUIEndContext();
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
 }
@@ -296,6 +297,8 @@ void App::processInput()
 		_camera->ProcessKeyboard(UP, 0.01 * _deltaTime);
 	if (glfwGetKey(_window, GLFW_KEY_F) == GLFW_PRESS)
 		_camera->ProcessKeyboard(DOWN, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_M) == GLFW_PRESS)
+		_isMenuEnabled = !_isMenuEnabled;
 }
 
 unsigned int App::loadTexture(const char* path)
@@ -388,4 +391,51 @@ void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	_camera->ProcessMouseScroll(yoffset);
+}
+
+void App::imGUIContextIntialization()
+{
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); 
+	(void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(_window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
+}
+
+
+void App::renderGUIMenuIfEnabled()
+{
+	if (_isMenuEnabled)
+	{
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGui::Begin("Simulations");
+		const char* items[2]{ "Gravity", "Collision" };
+		ImGui::Combo("Simulations", &_selectedItem, items, IM_ARRAYSIZE(items));
+		if (_selectedItem > -1)
+		{
+			ImGui::Text("Item selected %s", items[_selectedItem]);
+			if (ImGui::Button("Confirm Simulation"))
+			{
+				// decision point which simulation's rendering pipeline to be loaded using 'selectedItem' Variable
+				_isMenuEnabled = false;
+			}
+		}
+
+		// Here is the point decision Point which simulation is selected in next frame based on selectedItem
+
+		ImGui::End();
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+}
+
+void App::imGUIEndContext()
+{
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 }

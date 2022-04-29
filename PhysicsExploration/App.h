@@ -7,6 +7,8 @@
 #include "Lighting.h"
 #include "MenuGUI.h"
 #include "stb_image.h"
+#include <fstream>
+#include <string>
 #include <functional>
 
 class App : CallbackHandler
@@ -29,12 +31,10 @@ public:
 	void firstPass();
 	void secondPass();
 	int runApp();
-
 	virtual void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 	virtual void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod);
 	virtual void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
 	virtual void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-
 private:
 	// Window options
 	const GLuint WIDTH = 800;
@@ -77,6 +77,16 @@ private:
 	glm::vec4 _lightPos;
 	glm::vec4 _lightDir;
 	vector<glm::vec3> _pointLightPositions;
+
+	//imGUI or Menu variables
+	bool _isMenuEnabled;
+	int _selectedItem;
+	int _simulationItemCount;
+	char* _items[];
+
+	void imGUIContextIntialization();
+	void renderGUIMenuIfEnabled();
+	void imGUIEndContext();
 };
 
 #endif

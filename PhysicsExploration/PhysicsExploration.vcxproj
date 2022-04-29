@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External Resources\assimp\include;$(SolutionDir)External Resources\glew\include;$(SolutionDir)External Resources\glfw\include;$(SolutionDir)External Resources\glm;$(SolutionDir)External Resources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External Resources\assimp\include;$(SolutionDir)External Resources\glew\include;$(SolutionDir)External Resources\glfw\include;$(SolutionDir)External Resources\glm;$(SolutionDir)External Resources\;$(SolutionDir)External Resources\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -147,6 +147,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\External Resources\imgui\imgui.cpp" />
+    <ClCompile Include="..\External Resources\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\External Resources\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\External Resources\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\External Resources\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\External Resources\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\External Resources\imgui\imgui_widgets.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="CallbackHandler.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -159,6 +166,15 @@
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\External Resources\imgui\imconfig.h" />
+    <ClInclude Include="..\External Resources\imgui\imgui.h" />
+    <ClInclude Include="..\External Resources\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="..\External Resources\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\External Resources\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\External Resources\imgui\imgui_internal.h" />
+    <ClInclude Include="..\External Resources\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\External Resources\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\External Resources\imgui\imstb_truetype.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="CallbackHandler.h" />
     <ClInclude Include="Camera.h" />
