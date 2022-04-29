@@ -31,9 +31,6 @@ public:
 	void firstPass();
 	void secondPass();
 	int runApp();
-	void imGUIContextIntialization();
-	void renderingGUIMenuIfEnabled();
-	void imGUIEndContext();
 	virtual void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 	virtual void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod);
 	virtual void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
@@ -86,6 +83,10 @@ private:
 	int _selectedItem;
 	int _simulationItemCount;
 	char* _items[];
+
+	void imGUIContextIntialization();
+	void renderGUIMenuIfEnabled();
+	void imGUIEndContext();
 };
 
 #endif

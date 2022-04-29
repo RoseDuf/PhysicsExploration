@@ -245,7 +245,7 @@ int App::runApp()
 		firstPass();
 		
 		secondPass();
-		renderingGUIMenuIfEnabled();
+		renderGUIMenuIfEnabled();
 		// Swap the screen buffers
 		glfwSwapBuffers(_window);
 		glfwPollEvents();
@@ -397,14 +397,15 @@ void App::imGUIContextIntialization()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGuiIO& io = ImGui::GetIO(); 
+	(void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(_window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
 
-void App::renderingGUIMenuIfEnabled()
+void App::renderGUIMenuIfEnabled()
 {
 	if (_isMenuEnabled)
 	{
