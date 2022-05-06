@@ -1,12 +1,10 @@
-#include "App.h"
+#include "ModelLoading.h"
 using namespace std;
 
 int main()
-{
-	App* application = new App();
-
-	application->runApp();
-
-	delete application;
+{	
+	RenderingPipeline* renderingPipeline = new ModelLoading;
+	renderingPipeline->runAppTemplate();
+	delete renderingPipeline; 
 	return 0;
 }
