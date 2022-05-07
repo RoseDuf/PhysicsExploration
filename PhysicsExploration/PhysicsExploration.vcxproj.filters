@@ -45,9 +45,6 @@
     <ClCompile Include="MenuGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="App.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CallbackHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -109,9 +106,6 @@
     </ClInclude>
     <ClInclude Include="MenuGUI.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="App.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CallbackHandler.h">
       <Filter>Header Files</Filter>
