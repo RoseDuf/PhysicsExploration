@@ -13,5 +13,6 @@ int main()
 		selectedSimulation = renderingPipeline->runAppTemplate();
 		delete renderingPipeline;
 	}
+	delete physicsSimulationFactory;
 	return 0;
 }

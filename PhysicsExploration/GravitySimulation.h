@@ -10,12 +10,16 @@ private:
 	static float s;  // position for next time frame
 	static Gravity* gravity;
 	static void updatePhysicsParameters();
-public:
-	GravitySimulation();
-	~GravitySimulation();
+
+protected:
 	void initializeShaders() const override;
 	void initializeModels() const override;
 	void renderScene(const Shader& shader) const override;
+
+public:
+	GravitySimulation();
+	~GravitySimulation();
+	
 	
 };
 
