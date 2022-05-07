@@ -157,6 +157,8 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="CallbackHandler.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Gravity.cpp" />
+    <ClCompile Include="GravitySimulation.cpp" />
     <ClCompile Include="Lighting.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MenuGUI.cpp" />
@@ -181,6 +183,8 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="CallbackHandler.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Gravity.h" />
+    <ClInclude Include="GravitySimulation.h" />
     <ClInclude Include="IndexObjLoader.h" />
     <ClInclude Include="Lighting.h" />
     <ClInclude Include="MenuGUI.h" />

@@ -8,6 +8,9 @@ RenderingPipeline* PhysicsSimulationsFactory::requestPhysicsSimulation(int selec
 {
     switch (selectedItem)
     {
+    case 0:
+        return new GravitySimulation();
+        break;
     case 1:
         return new ModelLoading();
         break;
