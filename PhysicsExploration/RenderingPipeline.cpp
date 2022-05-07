@@ -252,7 +252,7 @@ void RenderingPipeline::firstPass() const
 	glActiveTexture(GL_TEXTURE0);
 
 	// shader stuff vvvvvvvvvvv
-	this->renderScene(*_depthShader);
+	 this->renderScene(*_depthShader);
 	_object->Draw(*_depthShader);
 	_plane->Draw(*_depthShader);
 	// shader stuff ^^^^^^^^^^^^^^^

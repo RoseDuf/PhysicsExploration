@@ -156,6 +156,8 @@
     <ClCompile Include="..\External Resources\imgui\imgui_widgets.cpp" />
     <ClCompile Include="CallbackHandler.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Gravity.cpp" />
+    <ClCompile Include="GravitySimulation.cpp" />
     <ClCompile Include="Lighting.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MenuGUI.cpp" />
@@ -179,6 +181,8 @@
     <ClInclude Include="..\External Resources\imgui\imstb_truetype.h" />
     <ClInclude Include="CallbackHandler.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Gravity.h" />
+    <ClInclude Include="GravitySimulation.h" />
     <ClInclude Include="IndexObjLoader.h" />
     <ClInclude Include="Lighting.h" />
     <ClInclude Include="MenuGUI.h" />
