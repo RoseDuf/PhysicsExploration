@@ -16,8 +16,8 @@
 class Gravity
 {
 private:
-	const float gravitationalConstant = 9.807;
-	const float marsGravitationalConstant = 3.721;
+	const float EARTH_GRAVITATIONAL_ACCELERATION = 9.807;
+	const float MARS_GRAVITATIONAL_ACCELERATION = 3.721;
 public:
 	float calculateVelocity(float u, float t);
 	float calculatePositionFromVelocity(float s0, float u, float t);

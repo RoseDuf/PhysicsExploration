@@ -5,6 +5,7 @@ float GravitySimulation::v;
 float GravitySimulation::s0;
 float GravitySimulation::s;
 Gravity* GravitySimulation::gravity;
+
 void GravitySimulation::initializeShaders() const
 {
 	_shader = new Shader("../PhysicsExploration/planet_vertex.shader", "../PhysicsExploration/planet_fragment.shader");
@@ -14,10 +15,10 @@ void GravitySimulation::initializeShaders() const
 
 GravitySimulation::GravitySimulation()
 {
-	u = 0.0f; 
-	v = 0.0f; 
-	s0 = 0.0f; 
-	s = 0.0f;   
+	u = 0.0f;
+	v = 0.0f;
+	s0 = 0.0f;
+	s = 0.0f;
 	gravity = new Gravity();
 }
 
@@ -29,6 +30,7 @@ void GravitySimulation::initializeModels() const
 
 GravitySimulation::~GravitySimulation()
 {
+	delete gravity;
 }
 
 void GravitySimulation::renderScene(const Shader& shader) const
