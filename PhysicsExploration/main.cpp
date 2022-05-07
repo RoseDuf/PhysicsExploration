@@ -4,7 +4,7 @@ using namespace std;
 
 int main()
 {	
-	int selectedSimulation = 0;
+	int selectedSimulation = 9999;
 	int exitCondition = -9;
 	PhysicsSimulationsFactory* physicsSimulationFactory = new PhysicsSimulationsFactory;
 	 while (exitCondition != selectedSimulation)
