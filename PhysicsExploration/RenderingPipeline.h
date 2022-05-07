@@ -15,7 +15,7 @@ class RenderingPipeline : CallbackHandler
 public:
 	RenderingPipeline();
 	~RenderingPipeline();
-	int runAppTemplate() const;
+	int runAppTemplate();
 	void processInput() const;
 protected:
 	int initializeWindow() const;
@@ -77,10 +77,11 @@ protected:
 	//imGUI or Menu variables
 	static bool _isMenuEnabled;
 	static int _selectedItem;
+	static int _previousItem;
 	int _simulationItemCount;
 
 	void imGUIContextIntialization() const;
-	static void renderGUIMenuIfEnabled();
+	static int renderGUIMenuIfEnabled();
 	void imGUIEndContext() const;
 };
 

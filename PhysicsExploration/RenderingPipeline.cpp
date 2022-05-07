@@ -7,12 +7,14 @@ GLuint RenderingPipeline::_depthMap;
 GLuint RenderingPipeline::_depthMapFBO;
 bool RenderingPipeline::_isMenuEnabled;
 int RenderingPipeline::_selectedItem;
+int RenderingPipeline::_previousItem;
 
 RenderingPipeline::RenderingPipeline()
 {
 	setApp();
 	_isMenuEnabled = false;
 	_selectedItem = -1;
+	_previousItem = _selectedItem;
 	_camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 	_lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
 	_lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
@@ -47,7 +49,7 @@ RenderingPipeline::~RenderingPipeline()
 	delete _object;
 }
 
-int RenderingPipeline::runAppTemplate() const
+int RenderingPipeline::runAppTemplate() 
 {
 	if (this->initializeWindow() != 0)
 		return EXIT_FAILURE;
@@ -68,6 +70,13 @@ int RenderingPipeline::runAppTemplate() const
 
 		secondPass();
 		renderGUIMenuIfEnabled();
+		if (_previousItem != _selectedItem)
+		{
+			imGUIEndContext();
+			// Terminate GLFW, clearing any resources allocated by GLFW.
+			glfwTerminate();
+			return _selectedItem;
+		}
 		// Swap the screen buffers
 		glfwSwapBuffers(_window);
 		glfwPollEvents();
@@ -75,6 +84,7 @@ int RenderingPipeline::runAppTemplate() const
 	imGUIEndContext();
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
+	return -9;
 }
 
 void RenderingPipeline::processInput() const
@@ -337,7 +347,7 @@ void RenderingPipeline::imGUIContextIntialization() const
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
-void RenderingPipeline::renderGUIMenuIfEnabled() 
+int RenderingPipeline::renderGUIMenuIfEnabled() 
 {
 	if (_isMenuEnabled)
 	{
@@ -362,6 +372,7 @@ void RenderingPipeline::renderGUIMenuIfEnabled()
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		return _selectedItem;
 	}
 }
 

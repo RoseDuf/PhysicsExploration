@@ -4,6 +4,7 @@ Shader* RenderingPipeline::_lightShader;
 Shader* RenderingPipeline::_depthShader;
 Model* RenderingPipeline::_plane;
 Model* RenderingPipeline::_object;
+ModelLoading* ModelLoading::_uniqueInstance = nullptr;
 
 ModelLoading::ModelLoading()
 {
@@ -13,6 +14,12 @@ ModelLoading::ModelLoading()
 ModelLoading::~ModelLoading()
 {
 
+}
+
+ModelLoading* ModelLoading::instance()
+{
+	if (_uniqueInstance == nullptr) { _uniqueInstance = new ModelLoading(); }
+	return _uniqueInstance;
 }
 
 void ModelLoading::initializeShaders() const

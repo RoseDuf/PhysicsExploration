@@ -163,6 +163,7 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelLoading.cpp" />
+    <ClCompile Include="PhysicsSimulationsFactory.cpp" />
     <ClCompile Include="RenderingPipeline.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="stdafx.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelLoading.h" />
     <ClInclude Include="objloaderIndex.h" />
+    <ClInclude Include="PhysicsSimulationsFactory.h" />
     <ClInclude Include="RenderingPipeline.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="includes.h" />
