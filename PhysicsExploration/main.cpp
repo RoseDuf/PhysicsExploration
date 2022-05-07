@@ -12,7 +12,6 @@ int main()
 		RenderingPipeline* renderingPipeline = physicsSimulationFactory->requestPhysicsSimulation(selectedSimulation);
 		selectedSimulation = renderingPipeline->runAppTemplate();
 		delete renderingPipeline;
-		// previousSimulation = selectedSimulation;
 	}
 	return 0;
 }
