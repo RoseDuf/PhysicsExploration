@@ -1,10 +1,20 @@
-#include "App.h"
+#include "RenderingPipeline.h"
+GLFWwindow* RenderingPipeline::_window;
+float RenderingPipeline::_deltaTime;
+float RenderingPipeline::_lastFrame;
+glm::mat4 RenderingPipeline::_lightSpaceMatrix;
+GLuint RenderingPipeline::_depthMap;
+GLuint RenderingPipeline::_depthMapFBO;
+bool RenderingPipeline::_isMenuEnabled;
+int RenderingPipeline::_selectedItem;
+int RenderingPipeline::_previousItem;
 
-App::App()
+RenderingPipeline::RenderingPipeline()
 {
 	setApp();
 	_isMenuEnabled = false;
 	_selectedItem = -1;
+	_previousItem = _selectedItem;
 	_camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 	_lightPos = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f);
 	_lightDir = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
@@ -29,7 +39,7 @@ App::App()
 	_simulationItemCount = 0;
 }
 
-App::~App()
+RenderingPipeline::~RenderingPipeline()
 {
 	delete _camera;
 	delete _shader;
@@ -39,7 +49,66 @@ App::~App()
 	delete _object;
 }
 
-int App::initializeWindow()
+int RenderingPipeline::runAppTemplate() 
+{
+	if (this->initializeWindow() != 0)
+		return EXIT_FAILURE;
+
+	this->initializeCallbacks();
+
+	this->initializeShaders();
+	this->initializeModels();
+	configureDepthBuffer();
+	this->addLights();
+	this->imGUIContextIntialization();
+	while (!glfwWindowShouldClose(_window))
+	{
+		processFrame();
+		processInput();
+
+		firstPass();
+
+		secondPass();
+		renderGUIMenuIfEnabled();
+		if (_previousItem != _selectedItem)
+		{
+			imGUIEndContext();
+			// Terminate GLFW, clearing any resources allocated by GLFW.
+			glfwTerminate();
+			return _selectedItem;
+		}
+		// Swap the screen buffers
+		glfwSwapBuffers(_window);
+		glfwPollEvents();
+	}
+	imGUIEndContext();
+	// Terminate GLFW, clearing any resources allocated by GLFW.
+	glfwTerminate();
+	return -9;
+}
+
+void RenderingPipeline::processInput() const
+{
+	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(_window, true);
+
+	if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS)
+		_camera->ProcessKeyboard(FORWARD, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS)
+		_camera->ProcessKeyboard(BACKWARD, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS)
+		_camera->ProcessKeyboard(LEFT, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS)
+		_camera->ProcessKeyboard(RIGHT, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_R) == GLFW_PRESS)
+		_camera->ProcessKeyboard(UP, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_F) == GLFW_PRESS)
+		_camera->ProcessKeyboard(DOWN, 0.01 * _deltaTime);
+	if (glfwGetKey(_window, GLFW_KEY_M) == GLFW_PRESS)
+		_isMenuEnabled = !_isMenuEnabled;
+}
+
+int RenderingPipeline::initializeWindow() const
 {
 	std::cout << "Starting GLFW context, OpenGL 4.3" << std::endl;
 	glfwInit();
@@ -56,7 +125,6 @@ int App::initializeWindow()
 
 	//WINDOW
 	_window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL_Project", nullptr, nullptr);
-
 	if (nullptr == _window)
 	{
 		std::cout << "Failed to create GLFW Window" << std::endl;
@@ -76,9 +144,10 @@ int App::initializeWindow()
 		return EXIT_FAILURE;
 	}
 	return 0;
+	
 }
 
-void App::initializeCallbacks()
+void RenderingPipeline::initializeCallbacks() const
 {
 	glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback_dispatch);
 	glfwSetKeyCallback(_window, key_callback_dispatch);
@@ -91,24 +160,11 @@ void App::initializeCallbacks()
 	stbi_set_flip_vertically_on_load(true);
 }
 
-void App::initializeShaders()
+void RenderingPipeline::initializeShaders() const
 {
-	// 2. use our shader program when we want to render an object
-	// Build and compile our shader program
-	// Vertex shader.
-	_shader = new Shader("../PhysicsExploration/vertex.shader", "../PhysicsExploration/fragment.shader");
-	_lightShader = new Shader("../PhysicsExploration/light_vertex.shader", "../PhysicsExploration/light_fragment.shader");
-	_depthShader = new Shader("../PhysicsExploration/shadow_vertex.shader", "../PhysicsExploration/shadow_fragment.shader");
 }
 
-void App::initializeModels()
-{
-	//Model object("../External Resources/Models/cat.obj");
-	_plane = new Model("../External Resources/Models/plane.obj");
-	_object = new Model("../External Resources/Models/backpack.obj");
-}
-
-void App::configureDepthBuffer()
+void RenderingPipeline::configureDepthBuffer() 
 {
 	glEnable(GL_DEPTH_TEST);
 
@@ -133,7 +189,7 @@ void App::configureDepthBuffer()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void App::addLights()
+void RenderingPipeline::addLights() const
 {
 	_shader->use();
 
@@ -168,7 +224,14 @@ void App::addLights()
 	_shader->setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
 }
 
-void App::firstPass()
+void RenderingPipeline::processFrame() const
+{
+	float currentFrame = glfwGetTime();
+	_deltaTime = currentFrame - _lastFrame;
+	_lastFrame = currentFrame;
+}
+
+void RenderingPipeline::firstPass() const
 {
 	//First pass : render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
@@ -189,7 +252,7 @@ void App::firstPass()
 	glActiveTexture(GL_TEXTURE0);
 
 	// shader stuff vvvvvvvvvvv
-	renderScene(*_depthShader);
+	this->renderScene(*_depthShader);
 	_object->Draw(*_depthShader);
 	_plane->Draw(*_depthShader);
 	// shader stuff ^^^^^^^^^^^^^^^
@@ -197,7 +260,7 @@ void App::firstPass()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void App::secondPass()
+void RenderingPipeline::secondPass() const
 {
 	//Second pass : render scene as normal with shadow mapping (using depth map)
 	// --------------------------------------------------------------
@@ -212,141 +275,20 @@ void App::secondPass()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, _depthMap);
 
-	renderScene(*_shader);
+	this->renderScene(*_shader);
 	_object->Draw(*_shader);
 	_plane->Draw(*_shader);
 	// shader stuff ^^^^^^^^^^^^^^^
 }
 
-void App::procressFrame()
-{
-	float currentFrame = glfwGetTime();
-	_deltaTime = currentFrame - _lastFrame;
-	_lastFrame = currentFrame;
-}
-
-int App::runApp()
-{
-	if (initializeWindow() != 0)
-		return EXIT_FAILURE;
-
-	initializeCallbacks();
-
-	initializeShaders();
-	initializeModels();
-	configureDepthBuffer();
-	addLights();
-	imGUIContextIntialization();
-	while (!glfwWindowShouldClose(_window))
-	{
-		procressFrame();
-		processInput();
-
-		firstPass();
-		
-		secondPass();
-		renderGUIMenuIfEnabled();
-		// Swap the screen buffers
-		glfwSwapBuffers(_window);
-		glfwPollEvents();
-	}
-	imGUIEndContext();
-	// Terminate GLFW, clearing any resources allocated by GLFW.
-	glfwTerminate();
-}
-
-void App::renderScene(const Shader& shader)
-{
-	shader.setVector("spotLight.position", glm::vec4(_camera->GetPosition(), 1.0f));
-	shader.setVector("spotLight.direction", _camera->GetFront());
-
-	shader.setVector("view_position", _camera->GetPosition());
-
-	glm::mat4 proj_matrix = glm::mat4(1.0f);
-	proj_matrix = glm::perspective(glm::radians(_camera->GetZoom()), (float)WIDTH / (float)HEIGHT, 0.1f, 100.f);
-	shader.setMatrix4("proj_matrix", proj_matrix);
-
-	glm::mat4 view_matrix = _camera->GetViewMatrix();
-	shader.setMatrix4("view_matrix", view_matrix);
-
-	// render the loaded model
-	glm::mat4 model_matrix = glm::mat4(1.0f);
-	model_matrix = glm::translate(model_matrix, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-	model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-	shader.setMatrix4("model_matrix", model_matrix);
-
-	shader.setBool("hasDirLight", _hasDirLight);
-	shader.setBool("hasPointLight", _hasPointLight);
-	shader.setBool("hasSpotLight", _hasSpotLight);
-}
-
-void App::processInput()
-{
-	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(_window, true);
-
-	if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS)
-		_camera->ProcessKeyboard(FORWARD, 0.01 * _deltaTime);
-	if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS)
-		_camera->ProcessKeyboard(BACKWARD, 0.01 * _deltaTime);
-	if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS)
-		_camera->ProcessKeyboard(LEFT, 0.01 * _deltaTime);
-	if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS)
-		_camera->ProcessKeyboard(RIGHT, 0.01 * _deltaTime);
-	if (glfwGetKey(_window, GLFW_KEY_R) == GLFW_PRESS)
-		_camera->ProcessKeyboard(UP, 0.01 * _deltaTime);
-	if (glfwGetKey(_window, GLFW_KEY_F) == GLFW_PRESS)
-		_camera->ProcessKeyboard(DOWN, 0.01 * _deltaTime);
-	if (glfwGetKey(_window, GLFW_KEY_M) == GLFW_PRESS)
-		_isMenuEnabled = !_isMenuEnabled;
-}
-
-unsigned int App::loadTexture(const char* path)
-{
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-
-	int width, height, nrComponents;
-	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-	if (data)
-	{
-		GLenum format;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-	}
-
-	return textureID;
-}
-
-void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void RenderingPipeline::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
 }
 
-
-void App::key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
+void RenderingPipeline::key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
 {
 	//if you press the Esc key, the window will close
 	if (key == GLFW_KEY_ESCAPE)
@@ -371,7 +313,7 @@ void App::key_callback(GLFWwindow* window, int key, int scancode, int action, in
 	}
 }
 
-void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+void RenderingPipeline::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	if (_firstMouse)
 	{
@@ -388,24 +330,24 @@ void App::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	_camera->ProcessMouseMovement(xoffset, yoffset);
 }
 
-void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void RenderingPipeline::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	_camera->ProcessMouseScroll(yoffset);
 }
 
-void App::imGUIContextIntialization()
+void RenderingPipeline::imGUIContextIntialization() const
 {
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); 
+	ImGuiIO& io = ImGui::GetIO();
 	(void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(_window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
-
-void App::renderGUIMenuIfEnabled()
+int RenderingPipeline::renderGUIMenuIfEnabled() 
 {
 	if (_isMenuEnabled)
 	{
@@ -430,10 +372,11 @@ void App::renderGUIMenuIfEnabled()
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		return _selectedItem;
 	}
 }
 
-void App::imGUIEndContext()
+void RenderingPipeline::imGUIEndContext() const 
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
